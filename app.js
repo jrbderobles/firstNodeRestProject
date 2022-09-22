@@ -1,11 +1,45 @@
+const path = require('path');
+
 const express = require('express');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const mongoose = require('mongoose');
 
 const feedRoutes = require('./routes/feed');
+const authRoutes = require('./routes/auth');
+const userRoutes = require('./routes/user');
 
 const app = express();
 
+const fileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'images');
+  },
+  filename: (req, file, cb) => {
+    cb(null, new Date().toISOString() + '-' + file.originalname);
+  }
+});
+
+const fileFilter = (req, file, cb) => {
+  if (
+    file.mimetype === 'image/png' ||
+    file.mimetype === 'image/jpg' ||
+    file.mimetype === 'image/jpeg'
+  ) {
+    cb(null, true);
+  } else {
+    cb(null, false);
+  }
+}
+
 app.use(bodyParser.json());
+
+app.use(multer({
+  storage: fileStorage,
+  fileFilter: fileFilter
+}).single('image'));
+
+app.use('/images', express.static(path.join(__dirname, 'images')));
 
 app.use((req, res, next) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,5 +49,27 @@ app.use((req, res, next) => {
 });
 
 app.use('/feed', feedRoutes);
+app.use('/auth', authRoutes);
+app.use('/user', userRoutes);
 
-app.listen(8080);
+app.use((error, req, res, next) => {
+  console.log(error);
+
+  const statusCode = error.statusCode || 500;
+  const message = error.message;
+  const data = error.data;
+  res
+    .status(statusCode)
+    .json({
+      message: message,
+      data: data
+    });
+});
+
+mongoose
+  .connect('mongodb+srv://username5263:ThisIsMyDbPass0228@cluster0.2bjd6of.mongodb.net/messages?retryWrites=true&w=majority')
+  .then(() => {
+    console.log('Connected to DB!');
+    app.listen(8080);
+  })
+  .catch(err => console.log(err));
