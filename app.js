@@ -9,6 +9,8 @@ const feedRoutes = require('./routes/feed');
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/user');
 
+const MONGODB_URI = require('./config').MONGODB_URI;
+
 const app = express();
 
 const fileStorage = multer.diskStorage({
@@ -67,9 +69,14 @@ app.use((error, req, res, next) => {
 });
 
 mongoose
-  .connect('mongodb+srv://username5263:ThisIsMyDbPass0228@cluster0.2bjd6of.mongodb.net/messages?retryWrites=true&w=majority')
+  .connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to DB!');
-    app.listen(8080);
+    const server = app.listen(8080);
+    const io = require('./socket').init(server);
+
+    io.on('connection', socket => {
+      console.log('Client connected');
+    });
   })
   .catch(err => console.log(err));
