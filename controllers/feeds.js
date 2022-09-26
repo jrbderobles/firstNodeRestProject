@@ -6,7 +6,7 @@ const { validationResult } = require('express-validator');
 const Post = require('../models/post');
 const User = require('../models/user');
 
-const io = require('../socket');
+// const io = require('../socket');
 
 exports.getPosts = async (req, res, next) => {
   const currentPage = req.query.page || 1;
@@ -69,18 +69,18 @@ exports.createPost = async (req, res, next) => {
     
     const user = await User.findById(userId);
     user.posts.push(post);
-    await user.save();
+    const savedUser = await user.save();
 
-    io.getIo().emit('posts', {
-      action: 'create',
-      post: {
-        ...post._doc,
-        creator: {
-          _id: userId,
-          name: user.name
-        }
-      }
-    });
+    // io.getIo().emit('posts', {
+    //   action: 'create',
+    //   post: {
+    //     ...post._doc,
+    //     creator: {
+    //       _id: userId,
+    //       name: user.name
+    //     }
+    //   }
+    // });
 
     res.status(201).json({
       message: 'Post created successfully!',
@@ -90,6 +90,8 @@ exports.createPost = async (req, res, next) => {
         name: user.name
       }
     });
+
+    return savedUser;
   } catch (err) {
     if (!err.statusCode) {
       err.statusCode = 500;
